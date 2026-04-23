@@ -618,7 +618,7 @@
   </main>
 
   <footer>
-    Food<span>Swipe</span> · Philinity v1.0 · <span id="itemCount">0</span> items
+    Food<span>Swipe</span> · Philinity v1.1 · <span id="itemCount">0</span> items
   </footer>
 </div>
 
@@ -650,6 +650,14 @@ provider.setCustomParameters({ prompt: 'select_account' });
 
 const PATH = 'foodswipe';
 const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
+
+// Map item type to Firebase sub-collection name
+// pantry    -> foodswipe/pantry
+// crop      -> foodswipe/crops
+// accessory -> foodswipe/accessories
+const COLLECTIONS = { pantry: 'pantry', crop: 'crops', accessory: 'accessories' };
+const collectionFor = (type) => COLLECTIONS[type] || 'pantry';
+const pathFor = (type, id) => `${PATH}/${collectionFor(type)}/${id}`;
 
 const dbRef = (p) => ref(db, p);
 const dbGet = (p) => get(dbRef(p));
@@ -1086,13 +1094,14 @@ async function saveItem() {
   if (!name) { showToast('Name is required', true); return; }
   const now = Date.now();
   const existing = editingId ? allItems.find(i => i.id === editingId) : null;
-  const newId = editingId || makeId(name, get('f_type'));
+  const newType = get('f_type');
+  const newId = editingId || makeId(name, newType);
 
   const photos = existing ? (existing.photos || []).slice() : [];
   if (pendingPhotos.length) {
     showToast('Uploading photos...');
     for (let i = 0; i < pendingPhotos.length; i++) {
-      const path = `${PATH}/${newId}/photo-${now}-${i}.jpg`;
+      const path = `${PATH}/${collectionFor(newType)}/${newId}/photo-${now}-${i}.jpg`;
       try {
         const url = await uploadDataUrlToStorage(pendingPhotos[i].compressed, path);
         photos.push(url);
@@ -1129,7 +1138,11 @@ async function saveItem() {
   };
 
   try {
-    await dbSet(`${PATH}/${newId}`, entry);
+    // If editing and the type changed, we need to move the record between collections
+    if (existing && existing.type !== newType) {
+      await dbRemove(pathFor(existing.type, existing.id));
+    }
+    await dbSet(pathFor(newType, newId), entry);
     showToast(editingId ? 'Updated' : 'Added');
     editingId = null;
     pendingPhotos = [];
@@ -1141,8 +1154,14 @@ async function saveItem() {
 }
 
 function makeId(name, type) {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-  return `${type}-${Date.now().toString(36)}-${slug}`;
+  let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+  if (!base) base = 'item';
+  // Check for collision inside the same collection only
+  const existing = new Set(allItems.filter(i => i.type === type).map(i => i.id));
+  if (!existing.has(base)) return base;
+  let n = 2;
+  while (existing.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
 }
 
 // Extract top-level JSON objects from text using brace counting.
@@ -1172,8 +1191,10 @@ function extractJsonBlocks(text) {
 
 async function deleteItem(id) {
   if (!confirm('Delete this item? This cannot be undone.')) return;
+  const item = allItems.find(i => i.id === id);
+  if (!item) { showToast('Item not found', true); return; }
   try {
-    await dbRemove(`${PATH}/${id}`);
+    await dbRemove(pathFor(item.type, id));
     showToast('Deleted');
     closeModal();
   } catch (e) { console.error(e); showToast('Delete failed', true); }
@@ -1281,14 +1302,19 @@ RULES:
         for (const a of acts) {
           if (a.action === 'add' && a.data && a.data.name) {
             const now = Date.now();
-            const id = makeId(a.data.name, a.data.type || 'pantry');
+            const type = a.data.type || 'pantry';
+            const id = makeId(a.data.name, type);
             const entry = { id, createdAt: now, lastUpdated: now, photos: [], tags: [], imageUrl: null, ...a.data };
-            await dbSet(`${PATH}/${id}`, entry);
+            await dbSet(pathFor(type, id), entry);
             showToast('AI added: ' + entry.name);
           } else if (a.action === 'update' && a.id && a.data) {
+            // Look up item type so we can find the right collection
+            const existing = allItems.find(it => it.id === a.id);
+            if (!existing) { console.warn('AI update target not found:', a.id); continue; }
+            const base = pathFor(existing.type, a.id);
             const updates = {};
-            Object.entries(a.data).forEach(([k, v]) => updates[`${PATH}/${a.id}/${k}`] = v);
-            updates[`${PATH}/${a.id}/lastUpdated`] = Date.now();
+            Object.entries(a.data).forEach(([k, v]) => updates[`${base}/${k}`] = v);
+            updates[`${base}/lastUpdated`] = Date.now();
             await update(ref(db, '/'), updates);
             showToast('AI updated item');
           }
@@ -1340,7 +1366,13 @@ onAuthStateChanged(auth, async (user) => {
   setTimeout(() => {
     dbOn(PATH, snap => {
       const val = snap.val() || {};
-      allItems = Object.values(val);
+      // Data is now grouped: foodswipe/{pantry|crops|accessories}/{id}
+      // Flatten into allItems for rendering
+      allItems = [
+        ...Object.values(val.pantry || {}),
+        ...Object.values(val.crops || {}),
+        ...Object.values(val.accessories || {}),
+      ];
       renderCategoryChips();
       filterAndRender();
     });
