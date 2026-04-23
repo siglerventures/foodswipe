@@ -429,6 +429,10 @@
     overflow: hidden;
     position: relative;
   }
+  .photo-thumb.is-main {
+    border-color: var(--sage-light);
+    box-shadow: 0 0 0 2px var(--sage-light);
+  }
   .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .photo-thumb-x {
     position: absolute;
@@ -447,6 +451,26 @@
     justify-content: center;
     line-height: 1;
   }
+  .photo-thumb-star {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(0,0,0,0.7);
+    color: var(--gold);
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+  }
+  .photo-thumb-star:hover { background: rgba(0,0,0,0.9); color: var(--gold); }
+  .photo-thumb.is-main .photo-thumb-star { color: var(--gold); }
 
   /* AI CHAT */
   .ai-panel {
@@ -638,8 +662,6 @@
       <div class="logo" onclick="resetFilters()">Food<span>Swipe</span></div>
       <div class="header-actions">
         <button class="btn btn-ghost" onclick="openAddModal()" title="Add item">+ Add</button>
-        <button class="icon-btn" onclick="openDataModal()" title="Data Manager">📦</button>
-        <button class="icon-btn" onclick="signOutUser()" title="Sign out">⎋</button>
       </div>
     </div>
   </header>
@@ -690,7 +712,8 @@
   </main>
 
   <footer>
-    Food<span>Swipe</span> · Philinity v1.2 · <span id="itemCount">0</span> items
+    Philinity FoodSwipe ©️ Rev 1.3 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
+    <span style="color:var(--text-muted);font-size:10px;"><span id="itemCount">0</span> items</span>
   </footer>
 </div>
 
@@ -1129,9 +1152,16 @@ function renderItemModal(item, seedType) {
   const it = item || {};
   const t = item ? item.type : seedType;
 
-  const photoPreviewHtml = (it.photos || []).map((url, i) => `
-    <div class="photo-thumb"><img src="${escapeHtml(url)}" alt=""><button class="photo-thumb-x" type="button" onclick="removeExistingPhoto(${i})">×</button></div>
-  `).join('');
+  const photoPreviewHtml = (it.photos || []).map((url, i) => {
+    const isMain = url === it.imageUrl;
+    return `
+    <div class="photo-thumb ${isMain ? 'is-main' : ''}" title="${isMain ? 'Main image' : 'Click star to set as main'}">
+      <img src="${escapeHtml(url)}" alt="">
+      <button class="photo-thumb-star" type="button" onclick="setAsMainImage(${i})" title="${isMain ? 'Main image' : 'Set as main image'}">${isMain ? '★' : '☆'}</button>
+      <button class="photo-thumb-x" type="button" onclick="removeExistingPhoto(${i})" title="Remove">×</button>
+    </div>
+  `;
+  }).join('');
 
   const html = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -1205,6 +1235,13 @@ function renderItemModal(item, seedType) {
             <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none" onchange="handlePhotoFiles(event)">
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFiles(event)">
           </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-sage" onclick="saveItem()">${item ? '💾 Save' : '＋ Add'}</button>
+        </div>
+      </div>
     </div>
   `;
   const wrap = document.createElement('div');
@@ -1282,15 +1319,37 @@ function renderPendingPhotos() {
   `).join('');
 }
 function removePendingPhoto(i) { pendingPhotos.splice(i, 1); renderPendingPhotos(); }
+function renderExistingPhotosHtml(item) {
+  return (item.photos || []).map((url, j) => {
+    const isMain = url === item.imageUrl;
+    return `
+    <div class="photo-thumb ${isMain ? 'is-main' : ''}" title="${isMain ? 'Main image' : 'Click star to set as main'}">
+      <img src="${escapeHtml(url)}" alt="">
+      <button class="photo-thumb-star" type="button" onclick="setAsMainImage(${j})" title="${isMain ? 'Main image' : 'Set as main image'}">${isMain ? '★' : '☆'}</button>
+      <button class="photo-thumb-x" type="button" onclick="removeExistingPhoto(${j})" title="Remove">×</button>
+    </div>
+  `;
+  }).join('');
+}
+
 function removeExistingPhoto(i) {
   const item = allItems.find(x => x.id === editingId);
   if (!item) return;
+  const removed = item.photos[i];
   item.photos.splice(i, 1);
-  if (item.imageUrl && !item.photos.includes(item.imageUrl)) item.imageUrl = item.photos[0] || null;
+  // If we just removed the main image, fall back to first remaining
+  if (item.imageUrl === removed) item.imageUrl = item.photos[0] || null;
   const wrap = document.getElementById('existingPhotos');
-  if (wrap) wrap.innerHTML = (item.photos || []).map((url, j) => `
-    <div class="photo-thumb"><img src="${escapeHtml(url)}"><button class="photo-thumb-x" type="button" onclick="removeExistingPhoto(${j})">×</button></div>
-  `).join('');
+  if (wrap) wrap.innerHTML = renderExistingPhotosHtml(item);
+}
+
+function setAsMainImage(i) {
+  const item = allItems.find(x => x.id === editingId);
+  if (!item || !item.photos[i]) return;
+  item.imageUrl = item.photos[i];
+  const wrap = document.getElementById('existingPhotos');
+  if (wrap) wrap.innerHTML = renderExistingPhotosHtml(item);
+  showToast('★ Main image set — click Save to apply');
 }
 
 async function saveItem() {
@@ -1336,7 +1395,7 @@ async function saveItem() {
     url: get('f_url') || null,
     notes: get('f_notes') || null,
     photos,
-    imageUrl: photos[0] || (existing && existing.imageUrl) || null,
+    imageUrl: (existing && existing.imageUrl && photos.includes(existing.imageUrl)) ? existing.imageUrl : (photos[0] || null),
     tags: existing ? (existing.tags || []) : [],
     createdAt: existing ? existing.createdAt : now,
     lastUpdated: now,
@@ -1743,6 +1802,7 @@ window.askAI = askAI;
 window.handlePhotoFiles = handlePhotoFiles;
 window.removePendingPhoto = removePendingPhoto;
 window.removeExistingPhoto = removeExistingPhoto;
+window.setAsMainImage = setAsMainImage;
 window.filterAndRender = filterAndRender;
 window.openDataModal = openDataModal;
 window.closeDataModal = closeDataModal;
