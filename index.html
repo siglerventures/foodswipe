@@ -545,6 +545,77 @@
   }
 
   .hidden { display: none !important; }
+
+  /* LOAD MORE */
+  .load-more-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 28px 0 12px;
+  }
+  .load-more-btn {
+    background: var(--surface2);
+    border: 1px solid var(--sage-dim);
+    color: var(--sage-light);
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .load-more-btn:hover { background: var(--surface3); border-color: var(--sage); color: var(--text); }
+
+  /* CARD DRAG-OVER (drop image directly onto card) */
+  .card.drag-over {
+    border-color: var(--sage-light);
+    box-shadow: 0 0 0 2px var(--sage-light), 0 4px 20px rgba(107, 158, 127, 0.3);
+    transform: translateY(-2px) scale(1.01);
+  }
+  .card.drag-over::after {
+    content: '📸 Drop to attach photo';
+    position: absolute;
+    inset: 0;
+    background: rgba(11, 16, 12, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sage-light);
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 5;
+    border-radius: 12px;
+  }
+  .card { position: relative; }
+
+  /* DATA MANAGER */
+  .data-section {
+    background: var(--surface2);
+    border: 1px solid var(--border-sage);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .data-section.highlight {
+    background: linear-gradient(135deg, rgba(107,158,127,0.12), rgba(107,158,127,0.05));
+    border-color: var(--sage);
+  }
+  .data-section-title { font-size: 14px; font-weight: 500; color: var(--sage-light); margin-bottom: 4px; }
+  .data-section-desc { font-size: 12px; color: var(--text-dim); margin-bottom: 12px; }
+  .data-status {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    line-height: 1.7;
+  }
+  .file-input-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -567,6 +638,7 @@
       <div class="logo" onclick="resetFilters()">Food<span>Swipe</span></div>
       <div class="header-actions">
         <button class="btn btn-ghost" onclick="openAddModal()" title="Add item">+ Add</button>
+        <button class="icon-btn" onclick="openDataModal()" title="Data Manager">📦</button>
         <button class="icon-btn" onclick="signOutUser()" title="Sign out">⎋</button>
       </div>
     </div>
@@ -618,12 +690,15 @@
   </main>
 
   <footer>
-    Food<span>Swipe</span> · Philinity v1.1 · <span id="itemCount">0</span> items
+    Food<span>Swipe</span> · Philinity v1.2 · <span id="itemCount">0</span> items
   </footer>
 </div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- DATA MANAGER MODAL -->
+<div id="dataModalRoot"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
@@ -683,6 +758,8 @@ let searchQuery = '';
 let editingId = null;
 let pendingPhotos = []; // {compressed, preview}
 let chatHistory = [];
+const PAGE_SIZE = 12;
+let visibleCount = PAGE_SIZE;
 
 // ── UTIL ──────────────────────────────────────────
 function showToast(msg, isError=false) {
@@ -751,6 +828,7 @@ function compressImage(file, maxDim = 1400, quality = 0.82) {
 // ── FILTERS & RENDER ──────────────────────────────────────────
 function setTypeFilter(t) {
   typeFilter = t;
+  visibleCount = PAGE_SIZE;
   document.querySelectorAll('.chip[data-type]').forEach(c => c.classList.toggle('active', c.dataset.type === t));
   renderCategoryChips();
   categoryFilter = 'all';
@@ -758,19 +836,26 @@ function setTypeFilter(t) {
 }
 function setStatusFilter(s) {
   statusFilter = s;
+  visibleCount = PAGE_SIZE;
   document.querySelectorAll('.chip[data-status]').forEach(c => c.classList.toggle('active', c.dataset.status === s));
   filterAndRender();
 }
 function setCategoryFilter(c) {
   categoryFilter = c;
+  visibleCount = PAGE_SIZE;
   document.querySelectorAll('.chip[data-cat]').forEach(el => el.classList.toggle('active', el.dataset.cat === c));
   filterAndRender();
 }
 function resetFilters() {
+  visibleCount = PAGE_SIZE;
   setTypeFilter('all');
   setStatusFilter('all');
   document.getElementById('searchInput').value = '';
   searchQuery = '';
+  filterAndRender();
+}
+function loadMore() {
+  visibleCount += PAGE_SIZE;
   filterAndRender();
 }
 
@@ -843,7 +928,7 @@ function renderCard(item) {
   const qty = item.quantity ? `<div class="card-sub">${escapeHtml(String(item.quantity))}</div>` : '';
   const variety = item.variety ? `<div class="card-sub" style="font-style:italic;">${escapeHtml(item.variety)}</div>` : '';
   return `
-    <div class="card" onclick="openDetail('${item.id}')">
+    <div class="card" data-id="${escapeHtml(item.id)}" onclick="openDetail('${escapeHtml(item.id)}')">
       <div class="card-image">
         ${imgHtml}
         <div class="card-top-ribbon">
@@ -861,10 +946,65 @@ function renderCard(item) {
   `;
 }
 
+// Attach drag-drop handlers to every card in the grid.
+// Drop an image file onto a card to attach it as a photo (no modal needed).
+function attachCardDropHandlers() {
+  document.querySelectorAll('.card[data-id]').forEach(card => {
+    card.addEventListener('dragover', e => {
+      // Only highlight if there's a file or image being dragged
+      const hasFile = e.dataTransfer && Array.from(e.dataTransfer.items || []).some(i => i.kind === 'file');
+      if (!hasFile) return;
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', e => {
+      card.classList.remove('drag-over');
+    });
+    card.addEventListener('drop', async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.remove('drag-over');
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+      if (!files.length) return;
+      const id = card.dataset.id;
+      const item = allItems.find(i => i.id === id);
+      if (!item) return;
+      await attachPhotosToItem(item, files);
+    });
+  });
+}
+
+// Upload a list of image Files, compress them, attach to item, push to Firebase.
+async function attachPhotosToItem(item, files) {
+  showToast(`Uploading ${files.length} photo${files.length === 1 ? '' : 's'} to ${item.name}...`);
+  const photos = (item.photos || []).slice();
+  const base = pathFor(item.type, item.id);
+  const now = Date.now();
+  let added = 0;
+  for (let i = 0; i < files.length; i++) {
+    try {
+      const compressed = await compressImage(files[i]);
+      const url = await uploadDataUrlToStorage(compressed, `${base}/photo-${now}-${i}.jpg`);
+      photos.push(url);
+      added++;
+    } catch (err) { console.error('Photo upload failed', err); }
+  }
+  if (!added) { showToast('Upload failed', true); return; }
+  const updates = {};
+  updates[`${base}/photos`] = photos;
+  if (!item.imageUrl) updates[`${base}/imageUrl`] = photos[0];
+  updates[`${base}/lastUpdated`] = now;
+  try {
+    await update(ref(db, '/'), updates);
+    showToast(`✓ Added ${added} photo${added === 1 ? '' : 's'} to ${item.name}`);
+  } catch (e) { console.error(e); showToast('Save failed', true); }
+}
+
 function filterAndRender() {
   searchQuery = document.getElementById('searchInput').value.trim();
   renderStats();
-  const visible = allItems.filter(matchesFilters).sort((a,b) => {
+  const filtered = allItems.filter(matchesFilters).sort((a,b) => {
     // Expiring first, then by name
     const ae = isExpiringSoon(a) ? 0 : 1;
     const be = isExpiringSoon(b) ? 0 : 1;
@@ -873,13 +1013,32 @@ function filterAndRender() {
   });
   const grid = document.getElementById('grid');
   const empty = document.getElementById('empty');
-  if (visible.length === 0) {
+  if (filtered.length === 0) {
     grid.innerHTML = ''; empty.classList.remove('hidden');
+    removeLoadMore();
   } else {
     empty.classList.add('hidden');
+    const visible = filtered.slice(0, visibleCount);
     grid.innerHTML = visible.map(renderCard).join('');
+    attachCardDropHandlers();
+    renderLoadMore(visible.length, filtered.length);
   }
   document.getElementById('itemCount').textContent = allItems.length;
+}
+
+function renderLoadMore(shown, total) {
+  removeLoadMore();
+  if (shown >= total) return;
+  const remaining = total - shown;
+  const wrap = document.createElement('div');
+  wrap.className = 'load-more-wrap';
+  wrap.id = 'loadMoreWrap';
+  wrap.innerHTML = `<button class="load-more-btn" onclick="loadMore()">Load ${Math.min(PAGE_SIZE, remaining)} more · ${remaining} remaining</button>`;
+  document.getElementById('grid').insertAdjacentElement('afterend', wrap);
+}
+function removeLoadMore() {
+  const el = document.getElementById('loadMoreWrap');
+  if (el) el.remove();
 }
 
 // ── MODAL: ADD / EDIT ──────────────────────────────────────────
@@ -1037,37 +1196,83 @@ function renderItemModal(item, seedType) {
           <label>Photos</label>
           <div id="existingPhotos" class="photo-upload-row">${photoPreviewHtml}</div>
           <div id="pendingPhotos" class="photo-upload-row"></div>
+          <div id="photoDropzone" style="margin-top:10px;border:1.5px dashed var(--sage-dim);border-radius:10px;padding:16px;text-align:center;color:var(--text-dim);font-size:13px;transition:all 0.2s;">
+            Drag &amp; drop images here · or paste (Ctrl+V / ⌘V)
+          </div>
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
             <button type="button" class="btn btn-ghost" onclick="document.getElementById('photoFileInput').click()">📁 Choose files</button>
             <button type="button" class="btn btn-ghost" onclick="document.getElementById('cameraInput').click()">📷 Camera</button>
             <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none" onchange="handlePhotoFiles(event)">
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFiles(event)">
           </div>
-        </div>
-
-        <div class="modal-actions">
-          <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-sage" onclick="saveItem()">${item ? 'Save' : 'Add'}</button>
-        </div>
-      </div>
     </div>
   `;
   const wrap = document.createElement('div');
   wrap.id = 'modalRoot';
   wrap.innerHTML = html;
   document.body.appendChild(wrap);
+
+  // Hook up dropzone (drag-drop onto the photo area inside the modal)
+  const dz = document.getElementById('photoDropzone');
+  if (dz) {
+    dz.addEventListener('dragover', e => {
+      e.preventDefault();
+      dz.style.borderColor = 'var(--sage-light)';
+      dz.style.background = 'rgba(107,158,127,0.08)';
+      dz.style.color = 'var(--sage-light)';
+    });
+    dz.addEventListener('dragleave', e => {
+      dz.style.borderColor = 'var(--sage-dim)';
+      dz.style.background = 'transparent';
+      dz.style.color = 'var(--text-dim)';
+    });
+    dz.addEventListener('drop', async e => {
+      e.preventDefault();
+      dz.style.borderColor = 'var(--sage-dim)';
+      dz.style.background = 'transparent';
+      dz.style.color = 'var(--text-dim)';
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+      if (files.length) await ingestPhotoFiles(files);
+    });
+  }
 }
 
-async function handlePhotoFiles(ev) {
-  const files = Array.from(ev.target.files || []);
+// Common code path for adding image files to the pending queue (used by
+// choose-files, camera, drag-drop, and paste).
+async function ingestPhotoFiles(files) {
   for (const f of files) {
     try {
       const compressed = await compressImage(f);
       pendingPhotos.push({ compressed });
     } catch (e) { console.error(e); }
   }
-  ev.target.value = '';
   renderPendingPhotos();
+}
+
+// Paste handler — only active while the item modal is open
+document.addEventListener('paste', async e => {
+  if (!document.getElementById('modalRoot')) return;
+  if (!document.getElementById('photoDropzone')) return; // Detail modal — skip
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  const files = [];
+  for (const it of items) {
+    if (it.kind === 'file' && it.type.startsWith('image/')) {
+      const f = it.getAsFile();
+      if (f) files.push(f);
+    }
+  }
+  if (files.length) {
+    e.preventDefault();
+    await ingestPhotoFiles(files);
+    showToast('📋 Image pasted');
+  }
+});
+
+async function handlePhotoFiles(ev) {
+  const files = Array.from(ev.target.files || []);
+  await ingestPhotoFiles(files);
+  ev.target.value = '';
 }
 function renderPendingPhotos() {
   const wrap = document.getElementById('pendingPhotos');
@@ -1382,7 +1587,145 @@ onAuthStateChanged(auth, async (user) => {
 // ── WIRE UP ──────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('input', () => filterAndRender());
 
-// ── EXPORTS ──────────────────────────────────────────
+// ── DATA MANAGER ──────────────────────────────────────────
+function openDataModal() {
+  closeModal();
+  const total = allItems.length;
+  const pantry = allItems.filter(i => i.type === 'pantry').length;
+  const crops = allItems.filter(i => i.type === 'crop').length;
+  const acc = allItems.filter(i => i.type === 'accessory').length;
+  const html = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeDataModal()">
+      <div class="modal" style="max-width:520px;">
+        <button class="modal-close" onclick="closeDataModal()">✕</button>
+        <div class="modal-title">📦 Data Manager</div>
+        <div class="modal-sub">Backup · Export · Restore</div>
+
+        <div class="data-section highlight">
+          <div class="data-section-title">📦 Full Backup (JSON)</div>
+          <div class="data-section-desc">Download all pantry, crops, and accessories — complete snapshot.</div>
+          <button class="btn btn-sage" onclick="downloadFullBackup()">⬇️ Download Backup</button>
+        </div>
+
+        <div class="data-section">
+          <div class="data-section-title">📊 Export as CSV</div>
+          <div class="data-section-desc">All ${total} items (pantry + crops + accessories) — opens in Excel / Sheets.</div>
+          <button class="btn" onclick="downloadCSV()">⬇️ Download CSV</button>
+        </div>
+
+        <div class="data-section">
+          <div class="data-section-title">♻️ Restore from Backup</div>
+          <div class="data-section-desc">Select a foodswipe-backup-*.json file. This will merge with existing data.</div>
+          <label class="btn file-input-label">
+            📂 Choose Backup File
+            <input type="file" accept=".json" style="display:none" onchange="restoreFromBackup(event)">
+          </label>
+          <span id="restoreFilename" style="margin-left:10px;font-size:11px;color:var(--text-muted);font-family:ui-monospace,monospace;">No file selected</span>
+        </div>
+
+        <div class="data-status" id="dataStatus">
+          Current: ${total} items (${pantry} pantry · ${crops} crops · ${acc} accessories)
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeDataModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const root = document.getElementById('dataModalRoot');
+  root.innerHTML = html;
+}
+function closeDataModal() { document.getElementById('dataModalRoot').innerHTML = ''; }
+
+function downloadFullBackup() {
+  const data = {
+    pantry: {},
+    crops: {},
+    accessories: {},
+  };
+  allItems.forEach(i => {
+    const col = collectionFor(i.type);
+    data[col][i.id] = i;
+  });
+  const stamp = new Date().toISOString().split('T')[0];
+  const blob = new Blob([JSON.stringify({ foodswipe: data }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `foodswipe-backup-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  const s = document.getElementById('dataStatus');
+  if (s) s.textContent = `✓ Backed up ${allItems.length} items as ${a.download}`;
+  showToast('✓ Backup downloaded');
+}
+
+function downloadCSV() {
+  if (!allItems.length) { showToast('No items to export', true); return; }
+  const cols = ['type','name','category','variety','location','sublocation','quantity','price','status','vendor','purchaseDate','expirationDate','plantedDate','shelfLifeYears','plantingWindow','purpose','usedFor','url','notes'];
+  const header = cols.join(',');
+  const esc = (v) => {
+    if (v == null) return '';
+    let s = String(v).replace(/"/g, '""');
+    if (/[",\n]/.test(s)) s = `"${s}"`;
+    return s;
+  };
+  const rows = allItems.map(i => cols.map(c => esc(i[c])).join(','));
+  const csv = [header, ...rows].join('\n');
+  const stamp = new Date().toISOString().split('T')[0];
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `foodswipe-${stamp}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  showToast('✓ CSV downloaded');
+}
+
+async function restoreFromBackup(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const fn = document.getElementById('restoreFilename');
+  if (fn) fn.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      let data = JSON.parse(e.target.result);
+      // Accept either {foodswipe:{pantry:{}, crops:{}, ...}} or just {pantry:{}, crops:{}, ...}
+      if (data.foodswipe) data = data.foodswipe;
+
+      let count = 0;
+      if (data.pantry) count += Object.keys(data.pantry).length;
+      if (data.crops) count += Object.keys(data.crops).length;
+      if (data.accessories) count += Object.keys(data.accessories).length;
+
+      if (!count) { showToast('Backup file has no items', true); return; }
+
+      if (!confirm(`Restore ${count} items from "${file.name}"?\n\nExisting items with the same IDs will be OVERWRITTEN. New items will be ADDED. Items in Firebase that aren't in the backup will remain.`)) {
+        ev.target.value = '';
+        return;
+      }
+
+      const updates = {};
+      ['pantry','crops','accessories'].forEach(col => {
+        if (data[col]) {
+          Object.entries(data[col]).forEach(([id, item]) => {
+            updates[`${PATH}/${col}/${id}`] = item;
+          });
+        }
+      });
+      await update(ref(db, '/'), updates);
+      showToast(`✓ Restored ${count} items`);
+      const s = document.getElementById('dataStatus');
+      if (s) s.textContent = `✓ Restored ${count} items from ${file.name}`;
+    } catch (err) {
+      console.error(err);
+      showToast('Restore failed: ' + err.message, true);
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+
 window.signInWithGoogle = signInWithGoogle;
 window.signOutUser = signOutUser;
 window.openAddModal = openAddModal;
@@ -1395,11 +1738,17 @@ window.setTypeFilter = setTypeFilter;
 window.setStatusFilter = setStatusFilter;
 window.setCategoryFilter = setCategoryFilter;
 window.resetFilters = resetFilters;
+window.loadMore = loadMore;
 window.askAI = askAI;
 window.handlePhotoFiles = handlePhotoFiles;
 window.removePendingPhoto = removePendingPhoto;
 window.removeExistingPhoto = removeExistingPhoto;
 window.filterAndRender = filterAndRender;
+window.openDataModal = openDataModal;
+window.closeDataModal = closeDataModal;
+window.downloadFullBackup = downloadFullBackup;
+window.downloadCSV = downloadCSV;
+window.restoreFromBackup = restoreFromBackup;
 
 </script>
 </body>
