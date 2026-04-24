@@ -667,7 +667,10 @@
     border-radius: 10px;
     padding: 12px 14px;
     position: relative;
+    cursor: pointer;
+    transition: border-color 0.15s;
   }
+  .timeline-entry:hover { border-color: var(--sage); }
   .timeline-entry-head {
     display: flex;
     justify-content: space-between;
@@ -891,7 +894,7 @@
   </main>
 
   <footer>
-    Philinity FoodSwipe ©️ Rev 2.1 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
+    Philinity FoodSwipe ©️ Rev 2.2 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
     <span style="color:var(--text-muted);font-size:10px;"><span id="itemCount">0</span> items</span>
   </footer>
 </div>
@@ -990,6 +993,8 @@ let searchQuery = '';
 let editingId = null;
 let pendingPhotos = []; // {compressed, preview}
 let pendingEventPhotos = []; // Photos queued in the event-log modal
+let editingEventId = null; // ID of the event being edited (null = creating new)
+let editingEventExistingPhotos = []; // Existing photos on the event being edited
 let chatHistory = [];
 const PAGE_SIZE = 12;
 let visibleCount = PAGE_SIZE;
@@ -1270,21 +1275,34 @@ async function quickLog(itemId, eventType) {
   showToast(`${eventEmoji(eventType)} Logged: ${eventLabel(eventType)}`);
 }
 
-// Open a modal to add an event with note + optional photos.
-function openEventModal(itemId, presetEventType = 'note') {
+// Open a modal to add OR edit an event with note + optional photos.
+// If existingEvent is passed, pre-fills the form and updates in place.
+function openEventModal(itemId, presetEventType = 'note', existingEvent = null) {
   const item = allItems.find(i => i.id === itemId);
   if (!item) return;
   closeEventModal();
   pendingEventPhotos = [];
+  editingEventId = existingEvent ? existingEvent.id : null;
+  editingEventExistingPhotos = existingEvent && existingEvent.photos ? existingEvent.photos.slice() : [];
+  const activeType = existingEvent ? existingEvent.eventType : presetEventType;
   const options = allEventsFor(item.type)
-    .map(e => `<option value="${e.key}" ${e.key === presetEventType ? 'selected' : ''}>${e.emoji} ${e.label}</option>`)
+    .map(e => `<option value="${e.key}" ${e.key === activeType ? 'selected' : ''}>${e.emoji} ${e.label}</option>`)
     .join('');
+  const presetNote = existingEvent && existingEvent.note ? existingEvent.note : '';
+  const diagnosisHtml = existingEvent && existingEvent.aiDiagnosis
+    ? `<div class="field"><label>🤖 Claude Vision Diagnosis</label><div style="background:rgba(201,168,76,0.08);border-left:2px solid var(--gold);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--text);line-height:1.55;white-space:pre-wrap;">${escapeHtml(existingEvent.aiDiagnosis)}</div></div>`
+    : '';
+  const existingPhotosHtml = editingEventExistingPhotos.length
+    ? editingEventExistingPhotos.map((url, i) => `
+        <div class="photo-thumb"><img src="${escapeHtml(url)}" alt=""><button class="photo-thumb-x" type="button" onclick="removeEventExistingPhoto(${i})" title="Remove">×</button></div>
+      `).join('')
+    : '';
   const html = `
-    <div class="modal-overlay" onclick="if(event.target===this)closeEventModal()">
+    <div class="modal-overlay" style="z-index:300;" onclick="if(event.target===this)closeEventModal()">
       <div class="modal" style="max-width:520px;">
         <button class="modal-close" onclick="closeEventModal()">✕</button>
-        <div class="modal-title">📝 Log event</div>
-        <div class="modal-sub">For: <strong>${escapeHtml(item.name)}</strong></div>
+        <div class="modal-title">${existingEvent ? '✏️ Edit event' : '📝 Log event'}</div>
+        <div class="modal-sub">For: <strong>${escapeHtml(item.name)}</strong>${existingEvent ? ` · logged ${relativeTime(existingEvent.at)}` : ''}</div>
 
         <div class="field">
           <label>Event type</label>
@@ -1292,10 +1310,12 @@ function openEventModal(itemId, presetEventType = 'note') {
         </div>
         <div class="field">
           <label>Note</label>
-          <textarea id="ev_note" placeholder="Details… product used, amount, observations"></textarea>
+          <textarea id="ev_note" placeholder="Details… product used, amount, observations">${escapeHtml(presetNote)}</textarea>
         </div>
+        ${diagnosisHtml}
         <div class="field">
           <label>Photos</label>
+          <div id="evExistingPhotos" class="photo-upload-row">${existingPhotosHtml}</div>
           <div id="evPendingPhotos" class="photo-upload-row"></div>
           <div id="evDropzone" style="margin-top:10px;border:1.5px dashed var(--sage-dim);border-radius:10px;padding:16px;text-align:center;color:var(--text-dim);font-size:13px;transition:all 0.2s;">
             Drag &amp; drop · or paste · or click below
@@ -1308,9 +1328,12 @@ function openEventModal(itemId, presetEventType = 'note') {
           </div>
         </div>
 
-        <div class="modal-actions">
-          <button class="btn btn-ghost" onclick="closeEventModal()">Cancel</button>
-          <button class="btn btn-sage" onclick="submitEventModal('${escapeHtml(itemId)}')">💾 Log</button>
+        <div class="modal-actions" style="justify-content:space-between;">
+          <div>${existingEvent ? `<button class="btn btn-danger" onclick="deleteEvent('${escapeHtml(itemId)}','${escapeHtml(existingEvent.id)}');closeEventModal();">🗑️ Delete</button>` : ''}</div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-ghost" onclick="closeEventModal()">Cancel</button>
+            <button class="btn btn-sage" onclick="submitEventModal('${escapeHtml(itemId)}')">${existingEvent ? '💾 Save' : '💾 Log'}</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1338,10 +1361,28 @@ function openEventModal(itemId, presetEventType = 'note') {
     });
   }
 }
+
+// Remove an existing photo from the event being edited
+function removeEventExistingPhoto(i) {
+  editingEventExistingPhotos.splice(i, 1);
+  const wrap = document.getElementById('evExistingPhotos');
+  if (wrap) wrap.innerHTML = editingEventExistingPhotos.map((url, j) => `
+    <div class="photo-thumb"><img src="${escapeHtml(url)}" alt=""><button class="photo-thumb-x" type="button" onclick="removeEventExistingPhoto(${j})" title="Remove">×</button></div>
+  `).join('');
+}
+
+// Called when user clicks an existing timeline entry to edit it
+function editEvent(itemId, eventId) {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item || !item.events || !item.events[eventId]) return;
+  openEventModal(itemId, null, item.events[eventId]);
+}
 function closeEventModal() {
   const r = document.getElementById('eventModalRoot');
   if (r) r.innerHTML = '';
   pendingEventPhotos = [];
+  editingEventId = null;
+  editingEventExistingPhotos = [];
 }
 
 async function submitEventModal(itemId) {
@@ -1349,11 +1390,13 @@ async function submitEventModal(itemId) {
   if (!item) return;
   const eventType = document.getElementById('ev_type').value;
   const note = document.getElementById('ev_note').value.trim();
-  const photos = [];
+  const base = pathFor(item.type, item.id);
+  const now = Date.now();
+
+  // Start with kept existing photos (if editing), then append newly-uploaded ones
+  const photos = editingEventExistingPhotos.slice();
   if (pendingEventPhotos.length) {
     showToast('Uploading photos...');
-    const base = pathFor(item.type, item.id);
-    const now = Date.now();
     for (let i = 0; i < pendingEventPhotos.length; i++) {
       try {
         const url = await uploadDataUrlToStorage(pendingEventPhotos[i].compressed, `${base}/events/${now}-${i}.jpg`);
@@ -1361,9 +1404,26 @@ async function submitEventModal(itemId) {
       } catch (err) { console.error(err); }
     }
   }
-  await saveEvent(item, { eventType, note: note || null, photos });
+
+  if (editingEventId) {
+    // UPDATE existing event — preserve id, created-at, aiDiagnosis; update type/note/photos
+    const existingEvent = item.events && item.events[editingEventId];
+    if (!existingEvent) { showToast('Event no longer exists', true); return; }
+    const updates = {};
+    const evtBase = `${base}/events/${editingEventId}`;
+    updates[`${evtBase}/eventType`] = eventType;
+    updates[`${evtBase}/note`] = note || null;
+    updates[`${evtBase}/photos`] = photos;
+    updates[`${base}/lastUpdated`] = now;
+    await update(ref(db, '/'), updates);
+    showToast('✓ Event updated');
+  } else {
+    // CREATE new event
+    await saveEvent(item, { eventType, note: note || null, photos });
+    showToast(`${eventEmoji(eventType)} Event logged`);
+  }
+
   closeEventModal();
-  showToast(`${eventEmoji(eventType)} Event logged`);
   // Re-render detail view if open so the timeline refreshes
   if (document.getElementById('modalRoot')) {
     const fresh = allItems.find(i => i.id === itemId);
@@ -1627,15 +1687,15 @@ function renderTimelineSection(item) {
     ? `<div class="timeline-empty">No events logged yet. Tap an action above to start tracking this item's history.</div>`
     : events.map(e => {
         const photosHtml = (e.photos || []).length
-          ? `<div class="timeline-entry-photos">${e.photos.map(p => `<img class="timeline-entry-photo" src="${escapeHtml(p)}" alt="" onclick="window.open('${escapeHtml(p)}','_blank')">`).join('')}</div>`
+          ? `<div class="timeline-entry-photos">${e.photos.map(p => `<img class="timeline-entry-photo" src="${escapeHtml(p)}" alt="" onclick="event.stopPropagation();window.open('${escapeHtml(p)}','_blank')">`).join('')}</div>`
           : '';
         const noteHtml = e.note ? `<div class="timeline-entry-note">${escapeHtml(e.note)}</div>` : '';
         const diagHtml = e.aiDiagnosis
           ? `<div class="timeline-entry-diagnosis"><div class="timeline-entry-diagnosis-label">🤖 Claude Vision Diagnosis</div>${escapeHtml(e.aiDiagnosis)}</div>`
           : '';
         return `
-          <div class="timeline-entry">
-            <button class="timeline-entry-delete" onclick="deleteEvent('${escapeHtml(item.id)}','${escapeHtml(e.id)}')" title="Delete">✕</button>
+          <div class="timeline-entry" onclick="editEvent('${escapeHtml(item.id)}','${escapeHtml(e.id)}')" title="Click to edit">
+            <button class="timeline-entry-delete" onclick="event.stopPropagation();deleteEvent('${escapeHtml(item.id)}','${escapeHtml(e.id)}')" title="Delete">✕</button>
             <div class="timeline-entry-head">
               <div class="timeline-entry-type">${eventEmoji(e.eventType)} ${escapeHtml(eventLabel(e.eventType))}</div>
               <div class="timeline-entry-date" title="${new Date(e.at).toLocaleString()}">${relativeTime(e.at)} · ${new Date(e.at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
@@ -2454,6 +2514,8 @@ window.submitEventModal = submitEventModal;
 window.handleEventPhotoFiles = handleEventPhotoFiles;
 window.removeEventPendingPhoto = removeEventPendingPhoto;
 window.deleteEvent = deleteEvent;
+window.editEvent = editEvent;
+window.removeEventExistingPhoto = removeEventExistingPhoto;
 window.startDiagnose = startDiagnose;
 
 </script>
