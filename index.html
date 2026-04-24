@@ -570,47 +570,76 @@
 
   .hidden { display: none !important; }
 
-  /* QUICK-LOG BUTTONS ON CARDS */
-  .quick-log-row {
-    display: flex;
-    gap: 4px;
-    padding: 0 12px 12px;
-    flex-wrap: wrap;
-    border-top: 1px solid var(--border-sage);
-    padding-top: 10px;
-    margin-top: 6px;
+  /* TIMELINE — PRIMARY ACTIONS (big labeled buttons) */
+  .timeline-primary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
   }
-  .quick-log-btn {
-    flex: 1 0 auto;
-    min-width: 32px;
+  .timeline-primary-btn {
     background: var(--surface2);
     border: 1px solid var(--border-sage);
-    color: var(--text-dim);
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: 14px;
+    color: var(--text);
+    padding: 14px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    line-height: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
+    letter-spacing: 0.3px;
   }
-  .quick-log-btn:hover {
+  .timeline-primary-btn:hover {
     background: var(--surface3);
     border-color: var(--sage);
     color: var(--sage-light);
     transform: translateY(-1px);
   }
-  .quick-log-btn.diagnose-btn:hover {
-    border-color: var(--gold);
+  .timeline-primary-btn.is-diagnose {
+    border-color: rgba(201, 168, 76, 0.4);
     color: var(--gold);
+    background: linear-gradient(135deg, rgba(201,168,76,0.05), rgba(201,168,76,0.02));
   }
-  .quick-log-btn .qlb-label {
+  .timeline-primary-btn.is-diagnose:hover {
+    border-color: var(--gold);
+    background: rgba(201, 168, 76, 0.1);
+  }
+
+  /* TIMELINE — MORE ROW (secondary, smaller chips) */
+  .timeline-more-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .timeline-more-label {
     font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-right: 4px;
+  }
+  .timeline-more-btn {
+    background: transparent;
+    border: 1px solid var(--border-sage);
+    color: var(--text-dim);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
     font-family: 'DM Sans', sans-serif;
-    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .timeline-more-btn:hover {
+    border-color: var(--sage);
+    color: var(--sage-light);
   }
 
   /* TIMELINE */
@@ -630,37 +659,6 @@
     font-size: 18px;
     color: var(--sage-light);
     font-weight: 500;
-  }
-  .timeline-actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .timeline-action-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border-sage);
-    color: var(--text-dim);
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .timeline-action-btn:hover {
-    background: var(--surface3);
-    border-color: var(--sage);
-    color: var(--sage-light);
-  }
-  .timeline-action-btn.diagnose {
-    border-color: var(--gold);
-    color: var(--gold);
-  }
-  .timeline-action-btn.diagnose:hover {
-    background: rgba(201, 168, 76, 0.12);
   }
   .timeline-list { display: flex; flex-direction: column; gap: 10px; }
   .timeline-entry {
@@ -893,7 +891,7 @@
   </main>
 
   <footer>
-    Philinity FoodSwipe ©️ Rev 2.0 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
+    Philinity FoodSwipe ©️ Rev 2.1 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
     <span style="color:var(--text-muted);font-size:10px;"><span id="itemCount">0</span> items</span>
   </footer>
 </div>
@@ -1170,32 +1168,25 @@ function renderCard(item) {
   const eventCount = events.length;
   const lastEvent = events.sort((a,b) => (b.at||0) - (a.at||0))[0];
   const lastEventHtml = lastEvent
-    ? `<div class="card-sub" style="color:var(--sage);font-size:11px;">${eventEmoji(lastEvent.eventType)} ${escapeHtml(eventLabel(lastEvent.eventType))} · ${relativeTime(lastEvent.at)}</div>`
+    ? `<div class="card-sub" style="color:var(--sage);font-size:11px;margin-top:4px;">${eventEmoji(lastEvent.eventType)} ${escapeHtml(eventLabel(lastEvent.eventType))} · ${relativeTime(lastEvent.at)}</div>`
     : '';
-  const quick = quickEventsFor(item.type);
-  const quickLogHtml = quick.length ? `
-    <div class="quick-log-row">
-      ${quick.map(e => `<button class="quick-log-btn ${e.key==='diagnose'?'diagnose-btn':''}" title="${escapeHtml(e.label)}" onclick="event.stopPropagation(); ${e.key==='diagnose' ? `startDiagnose('${escapeHtml(item.id)}')` : `quickLog('${escapeHtml(item.id)}','${e.key}')`}">${e.emoji}</button>`).join('')}
-    </div>
-  ` : '';
   return `
-    <div class="card" data-id="${escapeHtml(item.id)}">
-      <div class="card-image" onclick="openDetail('${escapeHtml(item.id)}')">
+    <div class="card" data-id="${escapeHtml(item.id)}" onclick="openDetail('${escapeHtml(item.id)}')">
+      <div class="card-image">
         ${imgHtml}
         <div class="card-top-ribbon">
           <span class="badge badge-category">${emoji} ${escapeHtml(item.category || '')}</span>
         </div>
         <div class="card-top-right">${statusBadge(item)}</div>
-        ${eventCount > 0 ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.65);color:var(--sage-light);padding:3px 8px;border-radius:10px;font-size:10px;">📜 ${eventCount}</div>` : ''}
+        ${eventCount > 0 ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:var(--sage-light);padding:3px 10px;border-radius:12px;font-size:10px;letter-spacing:0.5px;">📜 ${eventCount}</div>` : ''}
       </div>
-      <div class="card-body" onclick="openDetail('${escapeHtml(item.id)}')">
+      <div class="card-body">
         <div class="card-name">${escapeHtml(item.name)}</div>
         ${variety}
         ${qty}
         ${loc}
         ${lastEventHtml}
       </div>
-      ${quickLogHtml}
     </div>
   `;
 }
@@ -1598,14 +1589,42 @@ function renderTimelineSection(item) {
   const events = item.events ? Object.values(item.events) : [];
   events.sort((a, b) => (b.at || 0) - (a.at || 0));
 
-  const typesForItem = allEventsFor(item.type);
-  const quickButtons = typesForItem.map(e => {
-    const isDiagnose = e.key === 'diagnose';
-    return `<button class="timeline-action-btn ${isDiagnose ? 'diagnose' : ''}" onclick="${isDiagnose ? `startDiagnose('${escapeHtml(item.id)}')` : `openEventModal('${escapeHtml(item.id)}','${e.key}')`}">${e.emoji} ${e.label}</button>`;
+  // Primary actions — sage-green, labeled, prominent (one big row)
+  // For crops: Water, Fertilize, Photo, Diagnose
+  // For pantry: Opened, Consumed, Photo
+  // For accessories: Used, Maintained, Photo
+  const primaryKeys = {
+    crop: ['watered', 'fertilized', 'photo', 'diagnose'],
+    pantry: ['opened', 'consumed', 'photo'],
+    accessory: ['used', 'maintained', 'photo'],
+  }[item.type] || ['photo', 'note'];
+
+  const primaryHtml = primaryKeys.map(k => {
+    const e = { key: k, ...EVENT_TYPES[k] };
+    const isDiagnose = k === 'diagnose';
+    const action = isDiagnose
+      ? `startDiagnose('${escapeHtml(item.id)}')`
+      : `openEventModal('${escapeHtml(item.id)}','${k}')`;
+    return `<button class="timeline-primary-btn ${isDiagnose ? 'is-diagnose' : ''}" onclick="${action}">
+      <span style="font-size:18px;">${e.emoji}</span>
+      <span>${e.label}</span>
+    </button>`;
   }).join('');
 
+  // "More" menu for everything else
+  const restKeys = allEventsFor(item.type).map(e => e.key).filter(k => !primaryKeys.includes(k));
+  const moreHtml = restKeys.length ? `
+    <div class="timeline-more-row">
+      <span class="timeline-more-label">More:</span>
+      ${restKeys.map(k => {
+        const e = { key: k, ...EVENT_TYPES[k] };
+        return `<button class="timeline-more-btn" onclick="openEventModal('${escapeHtml(item.id)}','${k}')">${e.emoji} ${e.label}</button>`;
+      }).join('')}
+    </div>
+  ` : '';
+
   const entriesHtml = events.length === 0
-    ? `<div class="timeline-empty">No events logged yet. Tap a button above to start a history.</div>`
+    ? `<div class="timeline-empty">No events logged yet. Tap an action above to start tracking this item's history.</div>`
     : events.map(e => {
         const photosHtml = (e.photos || []).length
           ? `<div class="timeline-entry-photos">${e.photos.map(p => `<img class="timeline-entry-photo" src="${escapeHtml(p)}" alt="" onclick="window.open('${escapeHtml(p)}','_blank')">`).join('')}</div>`
@@ -1631,12 +1650,13 @@ function renderTimelineSection(item) {
   return `
     <div class="timeline-section">
       <div class="timeline-header">
-        <h3>📜 History ${events.length ? `(${events.length})` : ''}</h3>
+        <h3>📜 History ${events.length ? `<span style="color:var(--text-muted);font-size:13px;font-weight:400;">· ${events.length}</span>` : ''}</h3>
       </div>
-      <div class="timeline-actions" style="margin-bottom:16px;">
-        ${quickButtons}
+      <div class="timeline-primary-row">
+        ${primaryHtml}
       </div>
-      <div class="timeline-list">
+      ${moreHtml}
+      <div class="timeline-list" style="margin-top:18px;">
         ${entriesHtml}
       </div>
     </div>
