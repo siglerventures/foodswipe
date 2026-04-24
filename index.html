@@ -301,6 +301,16 @@
     border-radius: 10px;
     padding: 14px 16px;
   }
+  .stat-clickable {
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .stat-clickable:hover {
+    border-color: var(--sage);
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
   .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
   .stat-value {
     font-family: 'Playfair Display', serif;
@@ -904,7 +914,7 @@
   </main>
 
   <footer>
-    Philinity FoodSwipe ©️ Rev 2.3 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
+    Philinity FoodSwipe ©️ Rev 2.4 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
     <span style="color:var(--text-muted);font-size:10px;"><span id="itemCount">0</span> items</span>
   </footer>
 </div>
@@ -1148,12 +1158,46 @@ function renderStats() {
   const expiring = allItems.filter(isExpiringSoon).length;
   const needs = allItems.filter(i => i.status === 'need').length;
   document.getElementById('statsBar').innerHTML = `
-    <div class="stat"><div class="stat-label">Total Items</div><div class="stat-value">${total}</div></div>
-    <div class="stat"><div class="stat-label">Pantry</div><div class="stat-value">${pantry}</div></div>
-    <div class="stat"><div class="stat-label">Crops</div><div class="stat-value">${crops}</div></div>
-    <div class="stat"><div class="stat-label">Expiring &lt; 6mo</div><div class="stat-value ${expiring > 0 ? 'warn' : ''}">${expiring}</div></div>
-    <div class="stat"><div class="stat-label">Need to Buy</div><div class="stat-value ${needs > 0 ? 'alert' : ''}">${needs}</div></div>
+    <div class="stat stat-clickable" onclick="resetFilters()" title="Show everything">
+      <div class="stat-label">Total Items</div><div class="stat-value">${total}</div>
+    </div>
+    <div class="stat stat-clickable" onclick="filterFromStat('type','pantry')" title="Show pantry only">
+      <div class="stat-label">Pantry</div><div class="stat-value">${pantry}</div>
+    </div>
+    <div class="stat stat-clickable" onclick="filterFromStat('type','crop')" title="Show crops only">
+      <div class="stat-label">Crops</div><div class="stat-value">${crops}</div>
+    </div>
+    <div class="stat stat-clickable" onclick="filterFromStat('status','expiring')" title="Show expiring items">
+      <div class="stat-label">Expiring &lt; 6mo</div><div class="stat-value ${expiring > 0 ? 'warn' : ''}">${expiring}</div>
+    </div>
+    <div class="stat stat-clickable" onclick="filterFromStat('status','need')" title="Show items to buy">
+      <div class="stat-label">Need to Buy</div><div class="stat-value ${needs > 0 ? 'alert' : ''}">${needs}</div>
+    </div>
   `;
+}
+
+// Apply a filter as if the user clicked the corresponding chip.
+// Also clears other filters so the result matches the stat number.
+function filterFromStat(kind, value) {
+  // Reset search and category
+  document.getElementById('searchInput').value = '';
+  searchQuery = '';
+  categoryFilter = 'all';
+  if (kind === 'type') {
+    typeFilter = value;
+    statusFilter = 'all';
+  } else if (kind === 'status') {
+    typeFilter = 'all';
+    statusFilter = value;
+  }
+  visibleCount = PAGE_SIZE;
+  // Reflect in the chip UI
+  document.querySelectorAll('.chip[data-type]').forEach(c => c.classList.toggle('active', c.dataset.type === typeFilter));
+  document.querySelectorAll('.chip[data-status]').forEach(c => c.classList.toggle('active', c.dataset.status === statusFilter));
+  renderCategoryChips();
+  filterAndRender();
+  // Scroll grid into view so the user sees the filtered results
+  document.getElementById('grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function statusBadge(item) {
@@ -2510,6 +2554,7 @@ window.setStatusFilter = setStatusFilter;
 window.setCategoryFilter = setCategoryFilter;
 window.resetFilters = resetFilters;
 window.loadMore = loadMore;
+window.filterFromStat = filterFromStat;
 window.askAI = askAI;
 window.handlePhotoFiles = handlePhotoFiles;
 window.removePendingPhoto = removePendingPhoto;
