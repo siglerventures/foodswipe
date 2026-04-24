@@ -570,6 +570,187 @@
 
   .hidden { display: none !important; }
 
+  /* QUICK-LOG BUTTONS ON CARDS */
+  .quick-log-row {
+    display: flex;
+    gap: 4px;
+    padding: 0 12px 12px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border-sage);
+    padding-top: 10px;
+    margin-top: 6px;
+  }
+  .quick-log-btn {
+    flex: 1 0 auto;
+    min-width: 32px;
+    background: var(--surface2);
+    border: 1px solid var(--border-sage);
+    color: var(--text-dim);
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .quick-log-btn:hover {
+    background: var(--surface3);
+    border-color: var(--sage);
+    color: var(--sage-light);
+    transform: translateY(-1px);
+  }
+  .quick-log-btn.diagnose-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .quick-log-btn .qlb-label {
+    font-size: 10px;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.3px;
+  }
+
+  /* TIMELINE */
+  .timeline-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-sage);
+  }
+  .timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .timeline-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--sage-light);
+    font-weight: 500;
+  }
+  .timeline-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .timeline-action-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border-sage);
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .timeline-action-btn:hover {
+    background: var(--surface3);
+    border-color: var(--sage);
+    color: var(--sage-light);
+  }
+  .timeline-action-btn.diagnose {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .timeline-action-btn.diagnose:hover {
+    background: rgba(201, 168, 76, 0.12);
+  }
+  .timeline-list { display: flex; flex-direction: column; gap: 10px; }
+  .timeline-entry {
+    background: var(--surface2);
+    border: 1px solid var(--border-sage);
+    border-radius: 10px;
+    padding: 12px 14px;
+    position: relative;
+  }
+  .timeline-entry-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+    gap: 12px;
+  }
+  .timeline-entry-type {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--sage-light);
+    font-weight: 500;
+  }
+  .timeline-entry-date { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .timeline-entry-note {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .timeline-entry-photos {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .timeline-entry-photo {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--border-sage);
+    cursor: pointer;
+  }
+  .timeline-entry-diagnosis {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: rgba(201, 168, 76, 0.08);
+    border-left: 2px solid var(--gold);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .timeline-entry-diagnosis-label {
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .timeline-entry-delete {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .timeline-entry:hover .timeline-entry-delete { opacity: 1; }
+  .timeline-entry-delete:hover { color: var(--red); background: rgba(184, 92, 76, 0.1); }
+  .timeline-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 13px;
+    background: var(--surface2);
+    border: 1px dashed var(--border-sage);
+    border-radius: 10px;
+  }
+
   /* LOAD MORE */
   .load-more-wrap {
     display: flex;
@@ -712,7 +893,7 @@
   </main>
 
   <footer>
-    Philinity FoodSwipe ©️ Rev 1.5 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
+    Philinity FoodSwipe ©️ Rev 2.0 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
     <span style="color:var(--text-muted);font-size:10px;"><span id="itemCount">0</span> items</span>
   </footer>
 </div>
@@ -722,6 +903,9 @@
 
 <!-- DATA MANAGER MODAL -->
 <div id="dataModalRoot"></div>
+
+<!-- EVENT LOG MODAL -->
+<div id="eventModalRoot"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
@@ -756,6 +940,33 @@ const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqaw
 const COLLECTIONS = { pantry: 'pantry', crop: 'crops', accessory: 'accessories' };
 const collectionFor = (type) => COLLECTIONS[type] || 'pantry';
 const pathFor = (type, id) => `${PATH}/${collectionFor(type)}/${id}`;
+const eventsPathFor = (type, id) => `${pathFor(type, id)}/events`;
+
+// Event type library — emoji, label, which item types show this as a quick-log
+// on the card. The full list is available inside the detail modal.
+const EVENT_TYPES = {
+  watered:     { emoji: '💧', label: 'Watered',     quick: ['crop'] },
+  fertilized:  { emoji: '🌿', label: 'Fertilized',  quick: ['crop'] },
+  pruned:      { emoji: '✂️', label: 'Pruned',      quick: ['crop'] },
+  harvested:   { emoji: '🍅', label: 'Harvested',   quick: ['crop'] },
+  pest:        { emoji: '🐛', label: 'Pest',        quick: ['crop'] },
+  planted:     { emoji: '🌱', label: 'Planted',     quick: [] },
+  transplanted:{ emoji: '🪴', label: 'Transplanted',quick: [] },
+  photo:       { emoji: '📸', label: 'Photo',       quick: ['crop','pantry','accessory'] },
+  diagnose:    { emoji: '🩺', label: 'Diagnose',    quick: ['crop'] },
+  opened:      { emoji: '🔓', label: 'Opened',      quick: ['pantry'] },
+  consumed:    { emoji: '🍽️', label: 'Consumed',    quick: ['pantry'] },
+  restocked:   { emoji: '🛒', label: 'Restocked',   quick: ['pantry'] },
+  maintained:  { emoji: '🔧', label: 'Maintained',  quick: ['accessory'] },
+  used:        { emoji: '👷', label: 'Used',        quick: ['accessory'] },
+  note:        { emoji: '📝', label: 'Note',        quick: ['crop','pantry','accessory'] },
+};
+const quickEventsFor = (itemType) =>
+  Object.entries(EVENT_TYPES).filter(([_, v]) => v.quick.includes(itemType)).map(([k, v]) => ({ key: k, ...v }));
+const allEventsFor = (itemType) =>
+  Object.entries(EVENT_TYPES).map(([k, v]) => ({ key: k, ...v }));
+const eventLabel = (key) => (EVENT_TYPES[key] && EVENT_TYPES[key].label) || key;
+const eventEmoji = (key) => (EVENT_TYPES[key] && EVENT_TYPES[key].emoji) || '📝';
 
 const dbRef = (p) => ref(db, p);
 const dbGet = (p) => get(dbRef(p));
@@ -780,6 +991,7 @@ let categoryFilter = 'all';
 let searchQuery = '';
 let editingId = null;
 let pendingPhotos = []; // {compressed, preview}
+let pendingEventPhotos = []; // Photos queued in the event-log modal
 let chatHistory = [];
 const PAGE_SIZE = 12;
 let visibleCount = PAGE_SIZE;
@@ -954,23 +1166,53 @@ function renderCard(item) {
   const loc = item.location ? `<div class="card-sub">📍 ${escapeHtml(item.location)}</div>` : '';
   const qty = item.quantity ? `<div class="card-sub">${escapeHtml(String(item.quantity))}</div>` : '';
   const variety = item.variety ? `<div class="card-sub" style="font-style:italic;">${escapeHtml(item.variety)}</div>` : '';
+  const events = item.events ? Object.values(item.events) : [];
+  const eventCount = events.length;
+  const lastEvent = events.sort((a,b) => (b.at||0) - (a.at||0))[0];
+  const lastEventHtml = lastEvent
+    ? `<div class="card-sub" style="color:var(--sage);font-size:11px;">${eventEmoji(lastEvent.eventType)} ${escapeHtml(eventLabel(lastEvent.eventType))} · ${relativeTime(lastEvent.at)}</div>`
+    : '';
+  const quick = quickEventsFor(item.type);
+  const quickLogHtml = quick.length ? `
+    <div class="quick-log-row">
+      ${quick.map(e => `<button class="quick-log-btn ${e.key==='diagnose'?'diagnose-btn':''}" title="${escapeHtml(e.label)}" onclick="event.stopPropagation(); ${e.key==='diagnose' ? `startDiagnose('${escapeHtml(item.id)}')` : `quickLog('${escapeHtml(item.id)}','${e.key}')`}">${e.emoji}</button>`).join('')}
+    </div>
+  ` : '';
   return `
-    <div class="card" data-id="${escapeHtml(item.id)}" onclick="openDetail('${escapeHtml(item.id)}')">
-      <div class="card-image">
+    <div class="card" data-id="${escapeHtml(item.id)}">
+      <div class="card-image" onclick="openDetail('${escapeHtml(item.id)}')">
         ${imgHtml}
         <div class="card-top-ribbon">
           <span class="badge badge-category">${emoji} ${escapeHtml(item.category || '')}</span>
         </div>
         <div class="card-top-right">${statusBadge(item)}</div>
+        ${eventCount > 0 ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.65);color:var(--sage-light);padding:3px 8px;border-radius:10px;font-size:10px;">📜 ${eventCount}</div>` : ''}
       </div>
-      <div class="card-body">
+      <div class="card-body" onclick="openDetail('${escapeHtml(item.id)}')">
         <div class="card-name">${escapeHtml(item.name)}</div>
         ${variety}
         ${qty}
         ${loc}
+        ${lastEventHtml}
       </div>
+      ${quickLogHtml}
     </div>
   `;
+}
+
+function relativeTime(ms) {
+  if (!ms) return '';
+  const diff = Date.now() - ms;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days/7)}w ago`;
+  if (days < 365) return `${Math.floor(days/30)}mo ago`;
+  return `${Math.floor(days/365)}y ago`;
 }
 
 // Attach drag-drop handlers to every card in the grid.
@@ -1026,6 +1268,263 @@ async function attachPhotosToItem(item, files) {
     await update(ref(db, '/'), updates);
     showToast(`✓ Added ${added} photo${added === 1 ? '' : 's'} to ${item.name}`);
   } catch (e) { console.error(e); showToast('Save failed', true); }
+}
+
+// ── EVENT TIMELINE ──────────────────────────────────────────
+// Log an event directly (no modal). Used for fast one-tap actions like "💧 Watered".
+async function quickLog(itemId, eventType) {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+  await saveEvent(item, { eventType, note: null, photos: [] });
+  showToast(`${eventEmoji(eventType)} Logged: ${eventLabel(eventType)}`);
+}
+
+// Open a modal to add an event with note + optional photos.
+function openEventModal(itemId, presetEventType = 'note') {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+  closeEventModal();
+  pendingEventPhotos = [];
+  const options = allEventsFor(item.type)
+    .map(e => `<option value="${e.key}" ${e.key === presetEventType ? 'selected' : ''}>${e.emoji} ${e.label}</option>`)
+    .join('');
+  const html = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeEventModal()">
+      <div class="modal" style="max-width:520px;">
+        <button class="modal-close" onclick="closeEventModal()">✕</button>
+        <div class="modal-title">📝 Log event</div>
+        <div class="modal-sub">For: <strong>${escapeHtml(item.name)}</strong></div>
+
+        <div class="field">
+          <label>Event type</label>
+          <select id="ev_type">${options}</select>
+        </div>
+        <div class="field">
+          <label>Note</label>
+          <textarea id="ev_note" placeholder="Details… product used, amount, observations"></textarea>
+        </div>
+        <div class="field">
+          <label>Photos</label>
+          <div id="evPendingPhotos" class="photo-upload-row"></div>
+          <div id="evDropzone" style="margin-top:10px;border:1.5px dashed var(--sage-dim);border-radius:10px;padding:16px;text-align:center;color:var(--text-dim);font-size:13px;transition:all 0.2s;">
+            Drag &amp; drop · or paste · or click below
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('evFileInput').click()">📁 Choose</button>
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('evCameraInput').click()">📷 Camera</button>
+            <input type="file" id="evFileInput" accept="image/*" multiple style="display:none" onchange="handleEventPhotoFiles(event)">
+            <input type="file" id="evCameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleEventPhotoFiles(event)">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeEventModal()">Cancel</button>
+          <button class="btn btn-sage" onclick="submitEventModal('${escapeHtml(itemId)}')">💾 Log</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const root = document.getElementById('eventModalRoot');
+  root.innerHTML = html;
+  // Hook dropzone
+  const dz = document.getElementById('evDropzone');
+  if (dz) {
+    dz.addEventListener('dragover', e => {
+      e.preventDefault();
+      dz.style.borderColor = 'var(--sage-light)';
+      dz.style.background = 'rgba(107,158,127,0.08)';
+    });
+    dz.addEventListener('dragleave', () => {
+      dz.style.borderColor = 'var(--sage-dim)';
+      dz.style.background = 'transparent';
+    });
+    dz.addEventListener('drop', async e => {
+      e.preventDefault();
+      dz.style.borderColor = 'var(--sage-dim)';
+      dz.style.background = 'transparent';
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+      if (files.length) await ingestEventPhotoFiles(files);
+    });
+  }
+}
+function closeEventModal() {
+  const r = document.getElementById('eventModalRoot');
+  if (r) r.innerHTML = '';
+  pendingEventPhotos = [];
+}
+
+async function submitEventModal(itemId) {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+  const eventType = document.getElementById('ev_type').value;
+  const note = document.getElementById('ev_note').value.trim();
+  const photos = [];
+  if (pendingEventPhotos.length) {
+    showToast('Uploading photos...');
+    const base = pathFor(item.type, item.id);
+    const now = Date.now();
+    for (let i = 0; i < pendingEventPhotos.length; i++) {
+      try {
+        const url = await uploadDataUrlToStorage(pendingEventPhotos[i].compressed, `${base}/events/${now}-${i}.jpg`);
+        photos.push(url);
+      } catch (err) { console.error(err); }
+    }
+  }
+  await saveEvent(item, { eventType, note: note || null, photos });
+  closeEventModal();
+  showToast(`${eventEmoji(eventType)} Event logged`);
+  // Re-render detail view if open so the timeline refreshes
+  if (document.getElementById('modalRoot')) {
+    const fresh = allItems.find(i => i.id === itemId);
+    if (fresh) renderDetailModal(fresh);
+  }
+}
+
+async function saveEvent(item, { eventType, note, photos, aiDiagnosis }) {
+  const eventId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const base = eventsPathFor(item.type, item.id);
+  const evt = {
+    id: eventId,
+    eventType,
+    at: Date.now(),
+    note: note || null,
+    photos: photos || [],
+  };
+  if (aiDiagnosis) evt.aiDiagnosis = aiDiagnosis;
+  const updates = {};
+  updates[`${base}/${eventId}`] = evt;
+  updates[`${pathFor(item.type, item.id)}/lastUpdated`] = Date.now();
+  await update(ref(db, '/'), updates);
+  return evt;
+}
+
+async function deleteEvent(itemId, eventId) {
+  if (!confirm('Delete this event?')) return;
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+  const path = `${eventsPathFor(item.type, item.id)}/${eventId}`;
+  try {
+    await dbRemove(path);
+    showToast('Event deleted');
+    const fresh = allItems.find(i => i.id === itemId);
+    if (fresh && document.getElementById('modalRoot')) renderDetailModal(fresh);
+  } catch (e) { console.error(e); showToast('Delete failed', true); }
+}
+
+// Photo handlers for the event modal
+async function handleEventPhotoFiles(ev) {
+  await ingestEventPhotoFiles(Array.from(ev.target.files || []));
+  ev.target.value = '';
+}
+async function ingestEventPhotoFiles(files) {
+  for (const f of files) {
+    try {
+      const compressed = await compressImage(f);
+      pendingEventPhotos.push({ compressed });
+    } catch (e) { console.error(e); }
+  }
+  renderEventPendingPhotos();
+}
+function renderEventPendingPhotos() {
+  const wrap = document.getElementById('evPendingPhotos');
+  if (!wrap) return;
+  wrap.innerHTML = pendingEventPhotos.map((p, i) => `
+    <div class="photo-thumb"><img src="${p.compressed}"><button class="photo-thumb-x" type="button" onclick="removeEventPendingPhoto(${i})">×</button></div>
+  `).join('');
+}
+function removeEventPendingPhoto(i) {
+  pendingEventPhotos.splice(i, 1);
+  renderEventPendingPhotos();
+}
+
+// ── AI DIAGNOSE (Claude Vision) ──────────────────────────────────────────
+// User takes/picks a photo → we upload it → call askAI with vision → save an event with the diagnosis.
+async function startDiagnose(itemId) {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+  // Open native file picker immediately
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = false;
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await runDiagnose(item, file);
+  };
+  input.click();
+}
+
+async function runDiagnose(item, file) {
+  showToast('📸 Uploading photo & asking Claude Vision…');
+  let photoUrl;
+  try {
+    const compressed = await compressImage(file);
+    const ts = Date.now();
+    photoUrl = await uploadDataUrlToStorage(compressed, `${pathFor(item.type, item.id)}/events/diagnose-${ts}.jpg`);
+  } catch (e) {
+    console.error(e); showToast('Photo upload failed', true); return;
+  }
+
+  const system = `You are a plant-health specialist for Philinity (Boise foothills, USDA zone 6b/7a). You analyze photos of ${item.type === 'crop' ? 'crops/plants' : item.type === 'pantry' ? 'pantry items' : 'accessories'} and give honest, Boise-appropriate diagnostics. Be direct and specific.
+
+Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+
+Context about this item:
+- Name: ${item.name}
+${item.variety ? `- Variety: ${item.variety}` : ''}
+${item.location ? `- Location: ${item.location}${item.sublocation ? ' / ' + item.sublocation : ''}` : ''}
+${item.plantedDate ? `- Planted: ${item.plantedDate}` : ''}
+${item.purpose ? `- Purpose: ${item.purpose}` : ''}
+${item.notes ? `- Notes: ${item.notes}` : ''}
+
+Structure your response:
+1. **Observation** — what you see in the photo (concise)
+2. **Likely diagnosis** — pest/disease/deficiency/stress ranked by probability
+3. **Recommended action** — specific, Boise-appropriate, closed-loop preferred
+4. **Flags** — anything urgent or irreversible
+
+Keep response under 300 words. No fluff.`;
+
+  const userMsg = {
+    role: 'user',
+    content: [
+      { type: 'image', source: { type: 'url', url: photoUrl } },
+      { type: 'text', text: `Please diagnose this photo of my ${item.name}${item.variety ? ' (' + item.variety + ')' : ''}.` },
+    ],
+  };
+
+  try {
+    const user = auth.currentUser;
+    const idToken = await user.getIdToken();
+    const res = await fetch('https://us-central1-philinity-893d2.cloudfunctions.net/askAI', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+      body: JSON.stringify({ app: 'foodswipe', system, messages: [userMsg] }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      showToast('Diagnose failed: ' + errText, true);
+      return;
+    }
+    const data = await res.json();
+    const diagnosis = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n');
+    if (!diagnosis) { showToast('Diagnose returned empty', true); return; }
+
+    await saveEvent(item, {
+      eventType: 'diagnose',
+      note: null,
+      photos: [photoUrl],
+      aiDiagnosis: diagnosis,
+    });
+    showToast('🩺 Diagnosis saved to timeline');
+    // If detail open, refresh
+    const fresh = allItems.find(i => i.id === item.id);
+    if (fresh && document.getElementById('modalRoot')) renderDetailModal(fresh);
+  } catch (e) {
+    console.error(e);
+    showToast('Diagnose error: ' + e.message, true);
+  }
 }
 
 function filterAndRender() {
@@ -1095,6 +1594,55 @@ function closeModal() {
   if (m) m.remove();
 }
 
+function renderTimelineSection(item) {
+  const events = item.events ? Object.values(item.events) : [];
+  events.sort((a, b) => (b.at || 0) - (a.at || 0));
+
+  const typesForItem = allEventsFor(item.type);
+  const quickButtons = typesForItem.map(e => {
+    const isDiagnose = e.key === 'diagnose';
+    return `<button class="timeline-action-btn ${isDiagnose ? 'diagnose' : ''}" onclick="${isDiagnose ? `startDiagnose('${escapeHtml(item.id)}')` : `openEventModal('${escapeHtml(item.id)}','${e.key}')`}">${e.emoji} ${e.label}</button>`;
+  }).join('');
+
+  const entriesHtml = events.length === 0
+    ? `<div class="timeline-empty">No events logged yet. Tap a button above to start a history.</div>`
+    : events.map(e => {
+        const photosHtml = (e.photos || []).length
+          ? `<div class="timeline-entry-photos">${e.photos.map(p => `<img class="timeline-entry-photo" src="${escapeHtml(p)}" alt="" onclick="window.open('${escapeHtml(p)}','_blank')">`).join('')}</div>`
+          : '';
+        const noteHtml = e.note ? `<div class="timeline-entry-note">${escapeHtml(e.note)}</div>` : '';
+        const diagHtml = e.aiDiagnosis
+          ? `<div class="timeline-entry-diagnosis"><div class="timeline-entry-diagnosis-label">🤖 Claude Vision Diagnosis</div>${escapeHtml(e.aiDiagnosis)}</div>`
+          : '';
+        return `
+          <div class="timeline-entry">
+            <button class="timeline-entry-delete" onclick="deleteEvent('${escapeHtml(item.id)}','${escapeHtml(e.id)}')" title="Delete">✕</button>
+            <div class="timeline-entry-head">
+              <div class="timeline-entry-type">${eventEmoji(e.eventType)} ${escapeHtml(eventLabel(e.eventType))}</div>
+              <div class="timeline-entry-date" title="${new Date(e.at).toLocaleString()}">${relativeTime(e.at)} · ${new Date(e.at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+            </div>
+            ${noteHtml}
+            ${photosHtml}
+            ${diagHtml}
+          </div>
+        `;
+      }).join('');
+
+  return `
+    <div class="timeline-section">
+      <div class="timeline-header">
+        <h3>📜 History ${events.length ? `(${events.length})` : ''}</h3>
+      </div>
+      <div class="timeline-actions" style="margin-bottom:16px;">
+        ${quickButtons}
+      </div>
+      <div class="timeline-list">
+        ${entriesHtml}
+      </div>
+    </div>
+  `;
+}
+
 function renderDetailModal(item) {
   closeModal();
   const emoji = item.categoryEmoji || '🍽️';
@@ -1141,6 +1689,9 @@ function renderDetailModal(item) {
             return `<div><div class="detail-meta-label">${l}</div><div class="detail-meta-value" style="white-space:pre-wrap;">${isLink ? v : escapeHtml(String(v))}</div></div>`;
           }).join('')}
         </div>
+
+        ${renderTimelineSection(item)}
+
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="closeModal()">Close</button>
           <button class="btn btn-sage" onclick="openEditModal('${item.id}')">Edit</button>
@@ -1331,11 +1882,10 @@ async function ingestPhotoFiles(files) {
   renderPendingPhotos();
 }
 
-// Paste handler — works for both the Add/Edit modal (photoDropzone) and
-// the Detail modal (detailImageArea). Screenshots and copied images from
-// anywhere paste directly.
+// Paste handler — works for the Add/Edit modal (photoDropzone), the Event modal
+// (evDropzone), and the Detail modal (detailImageArea). Screenshots and copied
+// images from anywhere paste directly.
 document.addEventListener('paste', async e => {
-  if (!document.getElementById('modalRoot')) return;
   const items = e.clipboardData && e.clipboardData.items;
   if (!items) return;
   const files = [];
@@ -1346,17 +1896,25 @@ document.addEventListener('paste', async e => {
     }
   }
   if (!files.length) return;
-  e.preventDefault();
 
-  // Routing: if the Add/Edit modal is open (has dropzone), add to pending.
-  // Otherwise if the Detail modal is open (has detailImageArea), upload + attach.
+  // Event modal (most specific — check first)
+  if (document.getElementById('evDropzone')) {
+    e.preventDefault();
+    await ingestEventPhotoFiles(files);
+    showToast('📋 Image pasted');
+    return;
+  }
+  // Add/Edit modal
   if (document.getElementById('photoDropzone')) {
+    e.preventDefault();
     await ingestPhotoFiles(files);
     showToast('📋 Image pasted');
     return;
   }
+  // Detail modal
   const area = document.getElementById('detailImageArea');
   if (area) {
+    e.preventDefault();
     const id = area.dataset.id;
     const target = allItems.find(i => i.id === id);
     if (!target) return;
@@ -1869,6 +2427,14 @@ window.closeDataModal = closeDataModal;
 window.downloadFullBackup = downloadFullBackup;
 window.downloadCSV = downloadCSV;
 window.restoreFromBackup = restoreFromBackup;
+window.quickLog = quickLog;
+window.openEventModal = openEventModal;
+window.closeEventModal = closeEventModal;
+window.submitEventModal = submitEventModal;
+window.handleEventPhotoFiles = handleEventPhotoFiles;
+window.removeEventPendingPhoto = removeEventPendingPhoto;
+window.deleteEvent = deleteEvent;
+window.startDiagnose = startDiagnose;
 
 </script>
 </body>
