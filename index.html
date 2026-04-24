@@ -247,6 +247,16 @@
     flex-wrap: wrap;
     margin-top: 8px;
   }
+  .card-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-sage);
+  }
   .badge {
     font-size: 10px;
     padding: 3px 8px;
@@ -894,7 +904,7 @@
   </main>
 
   <footer>
-    Philinity FoodSwipe ©️ Rev 2.2 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
+    Philinity FoodSwipe ©️ Rev 2.3 · <a href="#" onclick="event.preventDefault();openDataModal();" style="color:var(--sage);text-decoration:none;">📦 Data</a> · <a href="#" onclick="event.preventDefault();signOutUser();" style="color:var(--sage);text-decoration:none;">🚪 Sign Out</a><br>
     <span style="color:var(--text-muted);font-size:10px;"><span id="itemCount">0</span> items</span>
   </footer>
 </div>
@@ -1175,14 +1185,14 @@ function renderCard(item) {
   const lastEventHtml = lastEvent
     ? `<div class="card-sub" style="color:var(--sage);font-size:11px;margin-top:4px;">${eventEmoji(lastEvent.eventType)} ${escapeHtml(eventLabel(lastEvent.eventType))} · ${relativeTime(lastEvent.at)}</div>`
     : '';
+  const statusB = statusBadge(item);
+  const catBadge = item.category
+    ? `<span class="badge badge-category">${emoji} ${escapeHtml(item.category)}</span>`
+    : '';
   return `
     <div class="card" data-id="${escapeHtml(item.id)}" onclick="openDetail('${escapeHtml(item.id)}')">
       <div class="card-image">
         ${imgHtml}
-        <div class="card-top-ribbon">
-          <span class="badge badge-category">${emoji} ${escapeHtml(item.category || '')}</span>
-        </div>
-        <div class="card-top-right">${statusBadge(item)}</div>
         ${eventCount > 0 ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:var(--sage-light);padding:3px 10px;border-radius:12px;font-size:10px;letter-spacing:0.5px;">📜 ${eventCount}</div>` : ''}
       </div>
       <div class="card-body">
@@ -1191,6 +1201,10 @@ function renderCard(item) {
         ${qty}
         ${loc}
         ${lastEventHtml}
+        <div class="card-badge-row">
+          ${catBadge}
+          ${statusB}
+        </div>
       </div>
     </div>
   `;
